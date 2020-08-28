@@ -4,9 +4,9 @@
 #include <mach/host_info.h>
 #include <mach/mach.h>
 #include <mach/mach_host.h>
+#include <mach/mach_vm.h>
 #include <mach/shared_region.h>
 
-#import <dlfcn.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -89,6 +89,32 @@ kern_return_t mp_write(int pid, void *addr, unsigned char *data, size_t len) {
 
   // Write memory!
   return vm_write(task, (vm_address_t)addr, (pointer_t)data_cpy, len);
+}
+
+uint64_t mp_get_proc_base_addr(int pid) {
+
+  // Find the desired task by PID.
+  mach_port_t task;
+  kern_return_t kern_ret = task_for_pid(mach_task_self(), pid, &task);
+  if (kern_ret != KERN_SUCCESS) {
+    _mp_print_err("mp_get_proc_base_addr", "Failed to get task for PID.");
+  }
+
+  vm_map_size_t vm_size = 0;
+  mach_vm_address_t base_addr = 0;
+  natural_t depth = 0;
+
+  struct vm_region_submap_info_64 region_info;
+  mach_msg_type_number_t region_info_len = sizeof(region_info);
+
+  kern_ret = mach_vm_region_recurse(task, &base_addr, &vm_size, &depth,
+                                    (vm_region_recurse_info_t)&region_info,
+                                    &region_info_len);
+  if (kern_ret != KERN_SUCCESS) {
+    return 0;
+  }
+
+  return base_addr;
 }
 
 mach_error_t mp_set_page_exec(void *address) {

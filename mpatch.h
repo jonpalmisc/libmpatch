@@ -21,6 +21,7 @@ kern_return_t mp_write(int pid, void *addr, unsigned char *data, size_t len);
 int32_t mp_get_pid(char *procname);
 static int mp_get_proc_list(kinfo_proc **list, size_t *count);
 
+uint64_t mp_get_proc_base_addr(int pid);
 int mp_set_page_exec(void *address);
 
 #endif
