@@ -30,14 +30,14 @@ size_t mp_word_align(size_t size) {
   return rsize;
 }
 
-unsigned char *mp_read(int pid, void *addr, size_t *len) {
-  assert(*len != 0 || addr != 0);
+unsigned char *mp_read(int pid, void *addr, size_t len) {
+  assert(len != 0 || addr != 0);
 
   // Word align our desired read length.
-  *len = mp_word_align(*len);
+  len = mp_word_align(len);
 
   // Attempt to allocate a buffer to read into.
-  unsigned char *data_buf = malloc(*len);
+  unsigned char *data_buf = malloc(len);
   mach_msg_type_number_t data_len;
   if (data_buf == NULL) {
     _mp_print_err("mp_read", "Failed to allocate data buffer.");
@@ -51,7 +51,7 @@ unsigned char *mp_read(int pid, void *addr, size_t *len) {
   }
 
   // Attempt to read the task's memory into out buffer.
-  kern_ret = vm_read(task, (vm_address_t)addr, *len, (vm_offset_t *)&data_buf,
+  kern_ret = vm_read(task, (vm_address_t)addr, len, (vm_offset_t *)&data_buf,
                      &data_len);
   if (kern_ret != KERN_SUCCESS) {
     _mp_print_err("mp_read", "Failed to read task memory.");

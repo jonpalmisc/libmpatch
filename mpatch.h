@@ -12,7 +12,7 @@ typedef struct kinfo_proc kinfo_proc;
 size_t mp_word_align(size_t size);
 
 // Reads a given process' memory.
-unsigned char *mp_read(int pid, void *addr, size_t *len);
+unsigned char *mp_read(int pid, void *addr, size_t len);
 
 // Write to a given process' memory.
 kern_return_t mp_write(int pid, void *addr, unsigned char *data, size_t len);
