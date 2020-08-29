@@ -2,7 +2,7 @@
 
                                    libmpatch
                     read/write XNU process memory on the fly
-                     v1.1.0 | 28 August 2020 | @jonpalmisc
+                     v2.0.1 | 29 August 2020 | @jonpalmisc
 
 ================================================================================
 
