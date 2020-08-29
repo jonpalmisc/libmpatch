@@ -2,13 +2,20 @@
 
                                    libmpatch
                     read/write XNU process memory on the fly
-                     v1.0.1 | 28 August 2020 | @jonpalmisc
+                     v1.1.0 | 28 August 2020 | @jonpalmisc
 
 ================================================================================
 
-1. Build
+1. Usage
 
-Clone, run CMake, then build.
+The easiest and recommended way of using libmpatch in your project is simply
+copying mpatch.h and mpatch.c into your project's source code.
+
+An example program can be found in the example folder. It is heavily commented
+to demonstrate and explain libmpatch's features and real-world usage.
+
+The CMake configuration is only included for testing if the library compiles
+and for the example program.
 
 2. Documentation
 
