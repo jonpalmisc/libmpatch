@@ -25,21 +25,17 @@
 
 #include "mpatch.h"
 
-#include <mach-o/dyld.h>
+#include <assert.h>
+
 #include <mach/host_info.h>
 #include <mach/mach.h>
 #include <mach/mach_host.h>
 #include <mach/mach_vm.h>
 #include <mach/shared_region.h>
+#include <mach-o/dyld.h>
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#include <assert.h>
-#include <errno.h>
-
-#include <sys/mman.h>
-#include <sys/sysctl.h>
 
 size_t mp_word_align(size_t size) {
   size_t rsize = 0;

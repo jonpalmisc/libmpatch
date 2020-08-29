@@ -24,11 +24,6 @@
 // SOFTWARE.
 
 #include <Foundation/Foundation.h>
-#include <objc/runtime.h>
-
-#include <inttypes.h>
-#include <stdio.h>
-#include <unistd.h>
 
 #include "../mpatch.h"
 
