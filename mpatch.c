@@ -117,21 +117,6 @@ uint64_t mp_get_proc_base_addr(int pid) {
   return base_addr;
 }
 
-mach_error_t mp_set_page_exec(void *address) {
-  vm_size_t page_size;
-  host_page_size(mach_host_self(), &page_size);
-  uintptr_t page = (uintptr_t)address & ~(uintptr_t)(page_size - 1);
-
-  int err = err_none;
-  err |= mprotect((void *)page, page_size, PROT_EXEC | PROT_READ);
-  err |= msync((void *)page, page_size, MS_INVALIDATE);
-  if (err) {
-    _mp_print_err("mp_set_page_exec", "Could not create executable page.");
-  }
-
-  return err;
-}
-
 // https://developer.apple.com/library/archive/qa/qa2001/qa1123.html
 static int mp_get_proc_list(struct kinfo_proc **list, size_t *count) {
   int err;
@@ -208,7 +193,7 @@ static int mp_get_proc_list(struct kinfo_proc **list, size_t *count) {
   return err;
 }
 
-int32_t mp_get_pid(char *procname) {
+int32_t mp_get_pid(char *name) {
 
   // Retrieve the list of running processes.
   struct kinfo_proc *proc_list;
@@ -218,7 +203,7 @@ int32_t mp_get_pid(char *procname) {
   // Iterate over each process and compare names.
   pid_t pid;
   for (int j = 0; j < proc_count + 1; j++) {
-    if (strcmp(proc_list[j].kp_proc.p_comm, procname) == 0)
+    if (strcmp(proc_list[j].kp_proc.p_comm, name) == 0)
       pid = proc_list[j].kp_proc.p_pid;
   }
 

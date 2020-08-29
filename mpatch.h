@@ -6,8 +6,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#include <mach/error.h>
-
 // I'm generally against doing this but The compiler barks about
 // mp_get_proc_list's definition not matching between the header and source
 // file without this for some reason.
@@ -45,14 +43,14 @@ unsigned char *mp_read(int pid, void *addr, size_t len);
  * @param len the number of bytes to write (should be the length of \p data)
  * @return the Mach error code indicating the success/failure of the operation
  */
-kern_return_t mp_write(int pid, void *addr, unsigned char *data, size_t len);
+int mp_write(int pid, void *addr, unsigned char *data, size_t len);
 
 /**
  * Gets the process ID of the process with the given name.
  *
- * @param procname the name of the process to find
+ * @param name the name of the process to find
  */
-int32_t mp_get_pid(char *procname);
+int32_t mp_get_pid(char *name);
 
 /**
  * Gets a list of all running processes.
@@ -74,7 +72,5 @@ static int mp_get_proc_list(kinfo_proc **list, size_t *count);
  * @return the base address of the process
  */
 uint64_t mp_get_proc_base_addr(int pid);
-
-int mp_set_page_exec(void *address);
 
 #endif
