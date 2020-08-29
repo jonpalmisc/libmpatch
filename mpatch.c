@@ -41,10 +41,6 @@
 #include <sys/mman.h>
 #include <sys/sysctl.h>
 
-void _mp_print_err(char *func, char *msg) {
-  printf("[%s] Error: %s\n", func, msg);
-}
-
 size_t mp_word_align(size_t size) {
   size_t rsize = 0;
 
@@ -116,122 +112,23 @@ mp_return mp_write(int pid, void *addr, unsigned char *data, size_t len) {
   return kern_ret == KERN_SUCCESS ? MP_ERR_SUCCESS : MP_ERR_VM_WRITE;
 }
 
-uint64_t mp_get_proc_base_addr(int pid) {
+mp_return mp_get_proc_base_addr(int pid, uint64_t *base_addr) {
 
   // Find the desired task by PID.
   mach_port_t task;
   kern_return_t kern_ret = task_for_pid(mach_task_self(), pid, &task);
   if (kern_ret != KERN_SUCCESS) {
-    _mp_print_err("mp_get_proc_base_addr", "Failed to get task for PID.");
+    return MP_ERR_GET_TASK;
   }
-
-  vm_map_size_t vm_size = 0;
-  mach_vm_address_t base_addr = 0;
-  natural_t depth = 0;
 
   struct vm_region_submap_info_64 region_info;
   mach_msg_type_number_t region_info_len = sizeof(region_info);
 
-  kern_ret = mach_vm_region_recurse(task, &base_addr, &vm_size, &depth,
+  vm_map_size_t vm_size = 0;
+  natural_t depth = 0;
+  kern_ret = mach_vm_region_recurse(task, base_addr, &vm_size, &depth,
                                     (vm_region_recurse_info_t)&region_info,
                                     &region_info_len);
-  if (kern_ret != KERN_SUCCESS) {
-    return 0;
-  }
 
-  return base_addr;
-}
-
-// https://developer.apple.com/library/archive/qa/qa2001/qa1123.html
-static int mp_get_proc_list(struct kinfo_proc **list, size_t *count) {
-  int err;
-  kinfo_proc *result;
-
-  static const int name[] = {CTL_KERN, KERN_PROC, KERN_PROC_ALL, 0};
-  size_t name_len = (sizeof(name) / sizeof(*name)) - 1;
-
-  size_t length;
-
-  assert(list != NULL);
-  assert(*list == NULL);
-  assert(count != NULL);
-
-  *count = 0;
-  result = NULL;
-  bool done = false;
-  do {
-    assert(result == NULL);
-
-    // Call sysctl with a NULL buffer to get the right buffer size.
-    length = 0;
-    err = sysctl((int *)name, name_len, NULL, &length, NULL, 0);
-    if (err == -1) {
-      err = errno;
-    }
-
-    // Allocate an appropriately sized buffer based on the results
-    // from the previous call.
-
-    if (err == 0) {
-      result = malloc(length);
-      if (result == NULL) {
-        err = ENOMEM;
-      }
-    }
-
-    // Call sysctl again with the new buffer.  If we get an ENOMEM
-    // error, toss away our buffer and start again.
-
-    if (err == 0) {
-      err = sysctl((int *)name, name_len, result, &length, NULL, 0);
-      if (err == -1) {
-        err = errno;
-      }
-
-      if (err == 0) {
-        done = true;
-      } else if (err == ENOMEM) {
-        assert(result != NULL);
-        free(result);
-        result = NULL;
-
-        err = 0;
-      }
-    }
-  } while (err == 0 && !done);
-
-  // Clean up and establish post conditions.
-
-  if (err != 0 && result != NULL) {
-    free(result);
-    result = NULL;
-  }
-
-  *list = result;
-
-  if (err == 0) {
-    *count = length / sizeof(kinfo_proc);
-  }
-
-  assert((err == 0) == (*list != NULL));
-
-  return err;
-}
-
-int32_t mp_get_pid(char *name) {
-
-  // Retrieve the list of running processes.
-  struct kinfo_proc *proc_list;
-  size_t proc_count;
-  mp_get_proc_list(&proc_list, &proc_count);
-
-  // Iterate over each process and compare names.
-  pid_t pid;
-  for (int j = 0; j < proc_count + 1; j++) {
-    if (strcmp(proc_list[j].kp_proc.p_comm, name) == 0)
-      pid = proc_list[j].kp_proc.p_pid;
-  }
-
-  free(proc_list);
-  return pid;
+  return kern_ret == KERN_SUCCESS ? MP_ERR_SUCCESS : MP_ERR_VM_RECURSE;
 }

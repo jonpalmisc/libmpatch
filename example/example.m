@@ -37,15 +37,24 @@
 
 @implementation Example
 
+void print_error(char *msg, mp_return err) {
+  printf("Error: %s (%d)\n", msg, err);
+}
+
 // This example program is meant to be compiled as a dynamic library and
 // forcefully loaded using DYLD_INSERT_LIBRARIES. See dyld(1) for more info.
 + (void)load {
+  mp_return err;
 
   // Gets the process ID of the current running process.
   int pid = getpid();
 
   // First we need to retrieve the base address of the process due to ASLR.
-  uint64_t base_addr = mp_get_proc_base_addr(getpid());
+  uint64_t base_addr = 0;
+  err = mp_get_proc_base_addr(getpid(), &base_addr);
+  if (err != MP_ERR_SUCCESS) {
+    print_error("Failed to get process base address.", err);
+  }
 
   // By disassembling the program with Ghidra, we were able to find the code
   // which determines whether to show the software registration window. Below
@@ -65,11 +74,11 @@
 
   // Here we read the original memory of the process into a buffer.
   unsigned char *patched;
-  mp_return err = mp_read(pid, reg_wnd_addr, &patched, patch_size);
+  err = mp_read(pid, reg_wnd_addr, &patched, patch_size);
 
   // We can check the result of the operation via the error code returned.
   if (err != MP_ERR_SUCCESS) {
-    printf("Error: %s (%d)\n", "Failed to read process memory.", err);
+    print_error("Failed to read process memory.", err);
   }
 
   // Next, we patch the first two bytes to change the JNZ instruction into a
@@ -81,10 +90,8 @@
   // Lastly, we write the patched bytes back into the process' memory.
   err = mp_write(pid, reg_wnd_addr, patched, patch_size);
   if (err != MP_ERR_SUCCESS) {
-    printf("Error: %s (%d)\n", "Failed to write process memory.", err);
+    print_error("Failed to write process memory.", err);
   }
-
-  free(patched);
 }
 
 @end

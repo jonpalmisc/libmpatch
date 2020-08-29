@@ -37,13 +37,9 @@
 #define MP_ERR_VM_READ 0x03
 #define MP_ERR_VM_PROTECT 0x04
 #define MP_ERR_VM_WRITE 0x05
+#define MP_ERR_VM_RECURSE 0x06
 
 typedef int mp_return;
-
-// I'm generally against doing this but The compiler barks about
-// mp_get_proc_list's definition not matching between the header and source
-// file without this for some reason.
-typedef struct kinfo_proc kinfo_proc;
 
 /**
  * Word-aligns a given size.
@@ -82,22 +78,6 @@ mp_return mp_read(int pid, void *addr, unsigned char **dest, size_t len);
 mp_return mp_write(int pid, void *addr, unsigned char *data, size_t len);
 
 /**
- * Gets the process ID of the process with the given name.
- *
- * @param name the name of the process to find
- */
-int32_t mp_get_pid(char *name);
-
-/**
- * Gets a list of all running processes.
- *
- * @param [out] list the list of running processes
- * @param [out] count the length of \p list (number of processes)
- * @return the Mach error code indicating the success/failure of the operation
- */
-static int mp_get_proc_list(kinfo_proc **list, size_t *count);
-
-/**
  * Gets the base address (post-ASLR) of the process with the ID of \p pid.
  *
  * This function will be necessary if attempting to patch memory based off of
@@ -105,8 +85,9 @@ static int mp_get_proc_list(kinfo_proc **list, size_t *count);
  * return value of this function.
  *
  * @param pid the ID of the process to read from
- * @return the base address of the process
+ * @param [out] base_addr the location to write the base address
+ * @return the status code indicating the success/failure of the operation
  */
-uint64_t mp_get_proc_base_addr(int pid);
+mp_return mp_get_proc_base_addr(int pid, uint64_t *base_addr);
 
 #endif
