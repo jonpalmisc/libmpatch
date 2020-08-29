@@ -64,7 +64,13 @@
   size_t patch_size = mp_word_align(sizeof(char) * 2);
 
   // Here we read the original memory of the process into a buffer.
-  unsigned char *patched = mp_read(pid, reg_wnd_addr, patch_size);
+  unsigned char *patched;
+  mp_return err = mp_read(pid, reg_wnd_addr, &patched, patch_size);
+
+  // We can check the result of the operation via the error code returned.
+  if (err != MP_ERR_SUCCESS) {
+    printf("Error: %s (%d)\n", "Failed to read process memory.", err);
+  }
 
   // Next, we patch the first two bytes to change the JNZ instruction into a
   // JMP instruction, which will result in the registration window never being
@@ -73,7 +79,12 @@
   patched[1] = 0xE9;
 
   // Lastly, we write the patched bytes back into the process' memory.
-  mp_write(pid, reg_wnd_addr, patched, patch_size);
+  err = mp_write(pid, reg_wnd_addr, patched, patch_size);
+  if (err != MP_ERR_SUCCESS) {
+    printf("Error: %s (%d)\n", "Failed to write process memory.", err);
+  }
+
+  free(patched);
 }
 
 @end

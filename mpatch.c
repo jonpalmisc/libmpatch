@@ -55,38 +55,33 @@ size_t mp_word_align(size_t size) {
   return rsize;
 }
 
-unsigned char *mp_read(int pid, void *addr, size_t len) {
+mp_return mp_read(int pid, void *addr, unsigned char **dest, size_t len) {
   assert(len != 0 || addr != 0);
 
   // Word align our desired read length.
   len = mp_word_align(len);
 
   // Attempt to allocate a buffer to read into.
-  unsigned char *data_buf = malloc(len);
-  mach_msg_type_number_t data_len;
-  if (data_buf == NULL) {
-    _mp_print_err("mp_read", "Failed to allocate data buffer.");
+  *dest = malloc(len);
+  if (*dest == NULL) {
+    return MP_ERR_MALLOC;
   }
 
   // Find the desired task by PID.
   mach_port_t task;
   kern_return_t kern_ret = task_for_pid(mach_task_self(), pid, &task);
   if (kern_ret != KERN_SUCCESS) {
-    _mp_print_err("mp_read", "Failed to get task for PID.");
+    return MP_ERR_GET_TASK;
   }
 
   // Attempt to read the task's memory into out buffer.
-  kern_ret = vm_read(task, (vm_address_t)addr, len, (vm_offset_t *)&data_buf,
-                     &data_len);
-  if (kern_ret != KERN_SUCCESS) {
-    _mp_print_err("mp_read", "Failed to read task memory.");
-    free(data_buf);
-  }
+  mach_msg_type_number_t read;
+  kern_ret = vm_read(task, (vm_address_t)addr, len, (vm_offset_t *)dest, &read);
 
-  return data_buf;
+  return kern_ret == KERN_SUCCESS ? MP_ERR_SUCCESS : MP_ERR_VM_READ;
 }
 
-kern_return_t mp_write(int pid, void *addr, unsigned char *data, size_t len) {
+mp_return mp_write(int pid, void *addr, unsigned char *data, size_t len) {
   assert(len != 0 || addr != 0 || data != 0);
 
   // Word align our desired write length.
@@ -95,7 +90,7 @@ kern_return_t mp_write(int pid, void *addr, unsigned char *data, size_t len) {
   // TODO: Remove copying if possible.
   unsigned char *data_cpy = (unsigned char *)malloc(len);
   if (data_cpy == NULL) {
-    _mp_print_err("mp_write", "Failed to allocate data copy buffer.");
+    return MP_ERR_MALLOC;
   }
 
   // Copy the data into our new buffer.
@@ -105,15 +100,20 @@ kern_return_t mp_write(int pid, void *addr, unsigned char *data, size_t len) {
   mach_port_t task;
   kern_return_t kern_ret = task_for_pid(mach_task_self(), pid, &task);
   if (kern_ret != KERN_SUCCESS) {
-    _mp_print_err("mp_write", "Failed to get task for PID.");
+    return MP_ERR_GET_TASK;
   }
 
   // Set address space permissions.
-  vm_protect(task, (vm_address_t)addr, (vm_size_t)len, 0,
-             VM_PROT_READ | VM_PROT_WRITE | VM_PROT_ALL);
+  kern_ret = vm_protect(task, (vm_address_t)addr, (vm_size_t)len, 0,
+                        VM_PROT_READ | VM_PROT_WRITE | VM_PROT_ALL);
+  if (kern_ret != KERN_SUCCESS) {
+    return MP_ERR_VM_PROTECT;
+  }
 
   // Write memory!
-  return vm_write(task, (vm_address_t)addr, (pointer_t)data_cpy, len);
+  kern_ret = vm_write(task, (vm_address_t)addr, (pointer_t)data_cpy, len);
+
+  return kern_ret == KERN_SUCCESS ? MP_ERR_SUCCESS : MP_ERR_VM_WRITE;
 }
 
 uint64_t mp_get_proc_base_addr(int pid) {

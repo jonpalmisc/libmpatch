@@ -31,6 +31,15 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define MP_ERR_SUCCESS 0x00
+#define MP_ERR_MALLOC 0x01
+#define MP_ERR_GET_TASK 0x02
+#define MP_ERR_VM_READ 0x03
+#define MP_ERR_VM_PROTECT 0x04
+#define MP_ERR_VM_WRITE 0x05
+
+typedef int mp_return;
+
 // I'm generally against doing this but The compiler barks about
 // mp_get_proc_list's definition not matching between the header and source
 // file without this for some reason.
@@ -54,9 +63,11 @@ size_t mp_word_align(size_t size);
  *
  * @param pid the ID of the target process
  * @param addr the address to start reading from
+ * @param [out] dest the buffer to read to
  * @param len the number of bytes to read
+ * @return the status code indicating the success/failure of the operation
  */
-unsigned char *mp_read(int pid, void *addr, size_t len);
+mp_return mp_read(int pid, void *addr, unsigned char **dest, size_t len);
 
 /**
  * Writes \p len bytes from the buffer \p data to the memory of the process
@@ -66,9 +77,9 @@ unsigned char *mp_read(int pid, void *addr, size_t len);
  * @param addr the address to start reading at
  * @param data the buffer of bytes to write
  * @param len the number of bytes to write (should be the length of \p data)
- * @return the Mach error code indicating the success/failure of the operation
+ * @return the status code indicating the success/failure of the operation
  */
-int mp_write(int pid, void *addr, unsigned char *data, size_t len);
+mp_return mp_write(int pid, void *addr, unsigned char *data, size_t len);
 
 /**
  * Gets the process ID of the process with the given name.
