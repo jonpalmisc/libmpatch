@@ -25,8 +25,6 @@
 
 #include "mpatch.h"
 
-#include <assert.h>
-
 #include <mach/host_info.h>
 #include <mach/mach.h>
 #include <mach/mach_host.h>
@@ -38,17 +36,18 @@
 #include <stdlib.h>
 
 size_t mp_word_align(size_t size) {
-  size_t rsize = 0;
+  size_t pad = 0;
+  if (size % sizeof(long) > 0) {
+    pad = sizeof(long) - (size % sizeof(long));
+  }
 
-  rsize =
-      ((size % sizeof(long)) > 0) ? (sizeof(long) - (size % sizeof(long))) : 0;
-  rsize += size;
-
-  return rsize;
+  return pad + size;
 }
 
 mp_return mp_read(int pid, void *addr, unsigned char **dest, size_t len) {
-  assert(len != 0 || addr != 0);
+  if (len == 0 || addr == 0) {
+    return MP_ERR_ARGS;
+  }
 
   // Word align our desired read length.
   len = mp_word_align(len);
@@ -74,7 +73,9 @@ mp_return mp_read(int pid, void *addr, unsigned char **dest, size_t len) {
 }
 
 mp_return mp_write(int pid, void *addr, unsigned char *data, size_t len) {
-  assert(len != 0 || addr != 0 || data != 0);
+  if (len == 0 || addr == 0 || data == 0) {
+    return MP_ERR_ARGS;
+  }
 
   // Word align our desired write length.
   len = mp_word_align(len);

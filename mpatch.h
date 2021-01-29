@@ -38,6 +38,7 @@
 #define MP_ERR_VM_PROTECT 0x04
 #define MP_ERR_VM_WRITE 0x05
 #define MP_ERR_VM_RECURSE 0x06
+#define MP_ERR_ARGS 0x10
 
 typedef int mp_return;
 
